@@ -1,19 +1,35 @@
 pipeline {
     agent any
-    environment {
-        DOCKER_CREDENTIALS = credentials('dockerhub-token')  // Use your credentials ID
+
+    tools {
+        maven 'maven-3.9'
     }
+
     stages {
-        stage('Docker Login') {
+        stage('Build jar') {
+            steps {
+                sh 'mvn package'
+            }
+        }
+
+        stage('Build Image') {
             steps {
                 script {
-                    sh 'echo $DOCKER_CREDENTIALS_PSW | docker login -u $DOCKER_CREDENTIALS_USR --password-stdin'
+                    echo "Building the Docker image..."
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credential', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh 'docker build -t luluaw4/demo-app:jma-2.0 .'
+                        sh "echo \$PASS | docker login -u \$USER --password-stdin"
+                        sh 'docker push luluaw4/demo-app:jma-2.0'
+                    }
                 }
             }
         }
-        stage('Build Docker Image') {
+
+        stage('Deploy') {
             steps {
-                sh 'docker build -t luluaw4/demo-app:jma-1.0 .'
+                script {
+                    echo "Deploying the application..."
+                }
             }
         }
     }
