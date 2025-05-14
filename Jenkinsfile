@@ -1,27 +1,20 @@
 pipeline {
-  agent any
-
-  environment {
-    IMAGE_NAME = "luluaw4/demo-app:jma-1.0"
-  }
-
-  stages {
-    stage('Build') {
-      steps {
-        sh 'mvn package'
-        sh 'docker build -t $IMAGE_NAME .'
-      }
+    agent any
+    environment {
+        DOCKER_CREDENTIALS = credentials('dockerhub-token')  // Use your credentials ID
     }
-    
-    stage('Push to Docker Hub') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', 
-                                          usernameVariable: 'DOCKER_USERNAME', 
-                                          passwordVariable: 'DOCKER_PASSWORD')]) {
-          sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-          sh 'docker push $IMAGE_NAME'
+    stages {
+        stage('Docker Login') {
+            steps {
+                script {
+                    sh 'echo $DOCKER_CREDENTIALS_PSW | docker login -u $DOCKER_CREDENTIALS_USR --password-stdin'
+                }
+            }
         }
-      }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t luluaw4/demo-app:jma-1.0 .'
+            }
+        }
     }
-  }
 }
